@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Esto es para ti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky1:#0B1030; --sky2:#34206B; --text:#FFF8E7; --gold:#FFC845; --ink:#1B1240; --card:#FFF8E7; --card-ink:#1B1240;
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--sky1:#070A22;--sky2:#26164F}}
+:root[data-theme="dark"]{--sky1:#070A22;--sky2:#26164F}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:linear-gradient(var(--sky1),var(--sky2));color:var(--text);overflow:hidden;
+  font-family:'Nunito','Segoe UI',system-ui,sans-serif;position:relative;
+}
+.star{position:fixed;width:2px;height:2px;border-radius:50%;background:#fff;animation:tw 2.4s ease-in-out infinite}
+@keyframes tw{50%{opacity:.15}}
+canvas{position:fixed;inset:0;width:100%;height:100%;z-index:2;touch-action:manipulation}
+.city{position:fixed;left:0;right:0;bottom:0;width:100%;height:calc(80px + env(safe-area-inset-bottom,0px));z-index:1}
+.line{
+  position:fixed;z-index:3;left:50%;top:calc(env(safe-area-inset-top,0px) + 14vh);transform:translateX(-50%);
+  width:min(92vw,420px);text-align:center;pointer-events:none;opacity:0;
+  font-size:1.5rem;line-height:1.35;font-weight:800;text-shadow:0 2px 12px rgba(5,5,25,.9),0 0 3px rgba(5,5,25,.9);
+}
+.line.title{font-family:'Bungee','Impact',sans-serif;font-weight:400;font-size:2.3rem;line-height:1.1;color:var(--gold)}
+.line.pop{animation:pop .8s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes pop{from{opacity:0;transform:translateX(-50%) scale(.55)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+.hint{
+  position:fixed;z-index:3;left:0;right:0;bottom:calc(98px + env(safe-area-inset-bottom,0px));text-align:center;
+  font-size:1.2rem;font-weight:800;pointer-events:none;animation:blink 1.8s ease-in-out infinite;
+}
+@keyframes blink{50%{opacity:.45}}
+.btn{
+  font:inherit;font-weight:800;cursor:pointer;border:0;border-radius:999px;background:var(--gold);color:var(--ink);
+  padding:12px 22px;font-size:1rem;
+}
+.btn.ghost{background:none;color:var(--text);text-decoration:underline;padding:10px}
+.bar{position:fixed;z-index:4;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.panel{
+  position:fixed;z-index:6;inset:0;display:none;align-items:center;justify-content:center;padding:20px;
+  background:rgba(5,5,25,.78);
+}
+.panel.on{display:flex}
+.card{
+  background:var(--card);color:var(--card-ink);border-radius:20px;padding:26px 24px;max-width:420px;width:100%;max-height:90vh;overflow:auto;
+}
+.card h2{font-family:'Bungee','Impact',sans-serif;font-weight:400;font-size:1.7rem;line-height:1.15;margin:0 0 14px;color:#D2306B}
+.card p{margin:0 0 12px;font-size:1.1rem;line-height:1.55;font-weight:700}
+.card .sign{margin:16px 0 18px;text-align:right}
+:focus-visible{outline:3px solid #fff;outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.star,.hint{animation:none}.line.pop{animation:none;opacity:1}}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<canvas id="cv" aria-label="Cielo para lanzar fuegos artificiales"></canvas>
+<svg class="city" viewBox="0 0 400 80" preserveAspectRatio="none" aria-hidden="true">
+  <path d="M0 80V50h22V36h18v20h16V28h20v30h18V44h24V24h16v28h20V40h18v18h22V32h20v26h18V46h22V30h18v28h20V42h16V80z" fill="#05071A"/>
+</svg>
+
+<div class="line" id="line" aria-live="polite"></div>
+<div class="hint" id="hint">Toca el cielo para lanzar un cohete</div>
+
+<div class="bar" id="bar">
+  <button class="btn ghost" id="read">Prefiero leerlo ya</button>
+  <button class="btn" id="again" style="display:none">Lanzar otra vez</button>
+</div>
+
+<div class="panel" id="panel" role="dialog" aria-modal="true" aria-label="Mensaje completo">
+  <div class="card">
+    <h2>¡Felicidades, locura! ❤️</h2>
+    <p>Me alegra poder seguir compartiendo contigo momentos, risas y tantos días juntas. Espero seguir teniéndote en mi vida, a pesar de las posibles diferencias que puedan surgir en esta vida (que alguna habrá 😂), y seguir sumando recuerdos juntas. ¡Que tengas un día lindo y te diviertas muchísimo!</p>
+    <p class="sign">Te quiere muchiiiiisimo,<br>tu Idy 😘</p>
+    <button class="btn" id="close">Cerrar</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var lines=[
+    '¡Felicidades, locura! ❤️',
+    'Me alegra poder seguir compartiendo contigo momentos, risas y tantos días juntas.',
+    'Espero seguir teniéndote en mi vida, a pesar de las posibles diferencias que puedan surgir en esta vida (que alguna habrá 😂),',
+    'y seguir sumando recuerdos juntas.',
+    '¡Que tengas un día lindo y te diviertas muchísimo!',
+    'Te quiere muchiiiiisimo, tu Idy 😘'
+  ];
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),lineEl=document.getElementById('line'),
+      hint=document.getElementById('hint'),panel=document.getElementById('panel'),
+      again=document.getElementById('again'),read=document.getElementById('read');
+  var W,H,dpr,rockets=[],parts=[],idx=0,finaleOn=false,last=0;
+
+  for(var s=0;s<45;s++){
+    var d=document.createElement('i');d.className='star';
+    d.style.left=Math.random()*100+'vw';d.style.top=Math.random()*70+'vh';
+    d.style.animationDelay=(Math.random()*2.4)+'s';
+    document.getElementById('stars').appendChild(d);
+  }
+  function resize(){
+    dpr=window.devicePixelRatio||1;W=window.innerWidth;H=window.innerHeight;
+    cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize();window.addEventListener('resize',resize);
+
+  function showLine(k){
+    lineEl.className='line'+(k===0?' title':'');
+    void lineEl.offsetWidth;
+    lineEl.textContent=lines[k];
+    lineEl.className='line pop'+(k===0?' title':'');
+  }
+  function launch(x,y){
+    var ty=Math.min(y,H*.72);
+    rockets.push({x:x,y:H-70,ty:ty,vy:-Math.max(6,(H-70-ty)/42)});
+  }
+  function burst(x,y,hue){
+    var ring=Math.random()<.4,n=ring?60:95,i,a,sp;
+    for(i=0;i<n;i++){
+      a=ring?i/n*6.2832:Math.random()*6.2832;
+      sp=ring?4.2+Math.random()*.3:1+Math.random()*5;
+      parts.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,dec:.009+Math.random()*.01,
+        h:hue+(Math.random()*30-15),l:Math.random()<.15?90:60,r:1.2+Math.random()*1.6});
+    }
+  }
+  function explode(r){
+    burst(r.x,r.ty,Math.random()*360);
+    if(idx<lines.length){
+      showLine(idx);hint.style.display='none';
+      if(idx===lines.length-1)setTimeout(finale,500);
+      idx++;
+    }
+  }
+  function finale(){
+    if(finaleOn)return;finaleOn=true;
+    for(var k=0;k<11;k++){(function(k){
+      setTimeout(function(){burst(W*(.12+Math.random()*.76),H*(.1+Math.random()*.45),Math.random()*360)},k*230);
+    })(k);}
+    setTimeout(function(){again.style.display='';},2800);
+  }
+  function frame(t){
+    var dt=Math.min(2.5,(t-last)/16.7||1);last=t;
+    ctx.globalCompositeOperation='destination-out';
+    ctx.fillStyle='rgba(0,0,0,.2)';ctx.fillRect(0,0,W,H);
+    ctx.globalCompositeOperation='lighter';
+    var i,p,r;
+    for(i=rockets.length-1;i>=0;i--){
+      r=rockets[i];r.y+=r.vy*dt;
+      parts.push({x:r.x+(Math.random()*2-1),y:r.y,vx:Math.random()-.5,vy:Math.random()*1.2,life:.6,dec:.04,h:40,l:70,r:1.6});
+      ctx.fillStyle='#FFE9A8';ctx.beginPath();ctx.arc(r.x,r.y,2.4,0,6.3);ctx.fill();
+      if(r.y<=r.ty){rockets.splice(i,1);explode(r);}
+    }
+    for(i=parts.length-1;i>=0;i--){
+      p=parts[i];p.vx*=Math.pow(.985,dt);p.vy=p.vy*Math.pow(.985,dt)+.06*dt;
+      p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=p.dec*dt;
+      if(p.life<=0){parts.splice(i,1);continue;}
+      ctx.fillStyle='hsla('+p.h+',100%,'+p.l+'%,'+p.life+')';
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.3);ctx.fill();
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  cv.addEventListener('pointerdown',function(e){launch(e.clientX,e.clientY)});
+  read.addEventListener('click',function(){panel.classList.add('on')});
+  document.getElementById('close').addEventListener('click',function(){panel.classList.remove('on')});
+  again.addEventListener('click',function(){
+    idx=0;finaleOn=false;again.style.display='none';lineEl.className='line';lineEl.textContent='';
+    hint.style.display='';hint.textContent='Toca el cielo para lanzar un cohete';
+  });
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)panel.classList.add('on');
+})();
+</script>
+</body>
+</html>
